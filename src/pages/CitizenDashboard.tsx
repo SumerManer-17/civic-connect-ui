@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +29,11 @@ const CitizenDashboard = () => {
             <p className="text-muted-foreground text-sm">Track and manage your reported issues</p>
           </div>
           <div className="flex gap-2">
-            <Button className="gap-2">
-              <PlusCircle className="h-4 w-4" /> Report Issue
-            </Button>
+            <Link to="/citizen/report">
+              <Button className="gap-2">
+                <PlusCircle className="h-4 w-4" /> Report Issue
+              </Button>
+            </Link>
             <Link to="/">
               <Button variant="outline" size="icon">
                 <LogOut className="h-4 w-4" />

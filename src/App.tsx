@@ -8,6 +8,7 @@ import CitizenAuth from "./pages/CitizenAuth";
 import CitizenDashboard from "./pages/CitizenDashboard";
 import AuthorityLogin from "./pages/AuthorityLogin";
 import AuthorityDashboard from "./pages/AuthorityDashboard";
+import ReportIssue from "./pages/ReportIssue";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/citizen/login" element={<CitizenAuth />} />
           <Route path="/citizen/dashboard" element={<CitizenDashboard />} />
+          <Route path="/citizen/report" element={<ReportIssue />} />
           <Route path="/authority/login" element={<AuthorityLogin />} />
           <Route path="/authority/dashboard" element={<AuthorityDashboard />} />
           <Route path="*" element={<NotFound />} />
