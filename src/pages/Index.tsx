@@ -48,12 +48,12 @@ const Index = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/citizen/login">
-              <Button size="lg" variant="secondary" className="gap-2 font-semibold">
+              <Button size="lg" variant="secondary" className="gap-2 font-semibold hover:bg-green-600/50 hover:text-white">
                 Report an Issue <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <Link to="/authority/login">
-              <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button size="lg" variant="outline" className="border-primary-foreground/30 text-white hover:none bg-transparent">
                 Authority Portal
               </Button>
             </Link>
@@ -100,7 +100,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t bg-card py-8">
         <div className="container text-center text-sm text-muted-foreground">
-          © 2026 CivicPulse. Built for better communities.
+          Copyright © 2026 SmartCivic
         </div>
       </footer>
     </div>
