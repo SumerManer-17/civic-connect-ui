@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   LayoutDashboard, AlertTriangle, CheckCircle, Clock, MapPin,
-  BarChart3, Settings, LogOut, Menu, X
+  BarChart3, Settings, LogOut, Menu, X, Filter, Bot
 } from "lucide-react";
+import { mockComplaints, issueTypeLabels } from "@/data/mockComplaints";
+import ComplaintList from "@/components/ComplaintList";
 
 const sidebarItems = [
-  { icon: LayoutDashboard, label: "Overview", active: true },
+  { icon: LayoutDashboard, label: "Overview" },
   { icon: AlertTriangle, label: "Open Issues" },
   { icon: CheckCircle, label: "Resolved" },
   { icon: MapPin, label: "Map View" },
@@ -17,24 +20,26 @@ const sidebarItems = [
   { icon: Settings, label: "Settings" },
 ];
 
-const recentIssues = [
-  { id: 1, title: "Water main break on Elm Street", priority: "High", status: "Open", area: "Ward 3", date: "2026-02-10" },
-  { id: 2, title: "Pothole cluster near City Hall", priority: "Medium", status: "Assigned", area: "Ward 1", date: "2026-02-09" },
-  { id: 3, title: "Illegal dumping at River Park", priority: "High", status: "Open", area: "Ward 5", date: "2026-02-09" },
-  { id: 4, title: "Traffic signal malfunction", priority: "Critical", status: "In Progress", area: "Ward 2", date: "2026-02-08" },
-  { id: 5, title: "Sidewalk repair needed", priority: "Low", status: "Open", area: "Ward 4", date: "2026-02-07" },
-];
-
-const priorityVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  Critical: "destructive",
-  High: "default",
-  Medium: "secondary",
-  Low: "outline",
-};
-
 const AuthorityDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeItem, setActiveItem] = useState("Overview");
+  const [severityFilter, setSeverityFilter] = useState("all");
+  const [issueTypeFilter, setIssueTypeFilter] = useState("all");
+
+  const filtered = useMemo(() => {
+    return mockComplaints.filter((c) => {
+      if (severityFilter !== "all" && c.severity !== severityFilter) return false;
+      if (issueTypeFilter !== "all" && c.issueType !== issueTypeFilter) return false;
+      return true;
+    });
+  }, [severityFilter, issueTypeFilter]);
+
+  const stats = useMemo(() => ({
+    open: mockComplaints.filter((c) => c.status === "Open").length,
+    inProgress: mockComplaints.filter((c) => c.status === "In Progress" || c.status === "Assigned").length,
+    resolved: mockComplaints.filter((c) => c.status === "Resolved").length,
+    totalDuplicates: mockComplaints.reduce((sum, c) => sum + c.duplicateCount, 0),
+  }), []);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -91,16 +96,19 @@ const AuthorityDashboard = () => {
             <Menu className="h-5 w-5" />
           </Button>
           <h1 className="font-heading font-semibold text-lg">{activeItem}</h1>
+          <Badge variant="secondary" className="ml-auto gap-1 text-xs">
+            <Bot className="h-3 w-3" /> AI Processing Active
+          </Badge>
         </header>
 
         <main className="flex-1 p-4 md:p-6 overflow-auto">
           {/* Summary */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {[
-              { label: "Open Issues", value: "47", icon: AlertTriangle, color: "text-destructive" },
-              { label: "In Progress", value: "23", icon: Clock, color: "text-warning" },
-              { label: "Resolved (Month)", value: "156", icon: CheckCircle, color: "text-accent" },
-              { label: "Avg. Response", value: "2.1 days", icon: BarChart3, color: "text-primary" },
+              { label: "Open Issues", value: String(stats.open), icon: AlertTriangle, color: "text-destructive" },
+              { label: "In Progress", value: String(stats.inProgress), icon: Clock, color: "text-warning" },
+              { label: "Resolved", value: String(stats.resolved), icon: CheckCircle, color: "text-accent" },
+              { label: "Total Reports", value: String(stats.totalDuplicates), icon: BarChart3, color: "text-primary" },
             ].map((stat) => (
               <Card key={stat.label}>
                 <CardContent className="pt-6">
@@ -116,38 +124,45 @@ const AuthorityDashboard = () => {
             ))}
           </div>
 
-          {/* Issues table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-heading text-lg">Recent Submissions</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left px-6 py-3 font-medium text-muted-foreground">Issue</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Area</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Priority</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Status</th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {recentIssues.map((issue) => (
-                    <tr key={issue.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-6 py-3 font-medium">{issue.title}</td>
-                      <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{issue.area}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant={priorityVariant[issue.priority]}>{issue.priority}</Badge>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{issue.status}</td>
-                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{issue.date}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Filter className="h-4 w-4" /> Filters
+            </div>
+            <Select value={severityFilter} onValueChange={setSeverityFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Severity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Severity</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={issueTypeFilter} onValueChange={setIssueTypeFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Issue Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {Object.entries(issueTypeLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(severityFilter !== "all" || issueTypeFilter !== "all") && (
+              <Button variant="ghost" size="sm" onClick={() => { setSeverityFilter("all"); setIssueTypeFilter("all"); }}>
+                Clear
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">
+              {filtered.length} of {mockComplaints.length} complaints
+            </span>
+          </div>
+
+          {/* Complaint list */}
+          <ComplaintList complaints={filtered} />
         </main>
       </div>
     </div>
