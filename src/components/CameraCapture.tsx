@@ -1,6 +1,6 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, RotateCcw, X } from "lucide-react";
+import { Camera, X } from "lucide-react";
 
 interface CameraCaptureProps {
   onCapture: (imageData: string) => void;
@@ -14,6 +14,7 @@ const CameraCapture = ({ onCapture, capturedImage, onClear }: CameraCaptureProps
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [pendingStream, setPendingStream] = useState<MediaStream | null>(null);
 
   const startCamera = useCallback(async () => {
     try {
@@ -23,18 +24,26 @@ const CameraCapture = ({ onCapture, capturedImage, onClear }: CameraCaptureProps
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setStreaming(true);
-      }
-    } catch {
-      setError("Camera access denied. Please allow camera permissions.");
+      setPendingStream(stream);
+      setStreaming(true);
+    } catch (err) {
+      console.error("Camera error:", err);
+      setError("Camera access denied or unavailable. Please check permissions.");
     }
   }, []);
+
+  // Attach stream to video element after it renders
+  useEffect(() => {
+    if (pendingStream && videoRef.current) {
+      videoRef.current.srcObject = pendingStream;
+      setPendingStream(null);
+    }
+  }, [pendingStream, streaming]);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    setPendingStream(null);
     setStreaming(false);
   }, []);
 
@@ -42,8 +51,8 @@ const CameraCapture = ({ onCapture, capturedImage, onClear }: CameraCaptureProps
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
     canvas.getContext("2d")?.drawImage(video, 0, 0);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
     onCapture(dataUrl);
@@ -54,12 +63,7 @@ const CameraCapture = ({ onCapture, capturedImage, onClear }: CameraCaptureProps
     return (
       <div className="relative">
         <img src={capturedImage} alt="Captured" className="w-full rounded-lg border object-cover max-h-64" />
-        <Button
-          variant="destructive"
-          size="icon"
-          className="absolute top-2 right-2 h-8 w-8"
-          onClick={() => { onClear(); }}
-        >
+        <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8" onClick={onClear}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -70,7 +74,7 @@ const CameraCapture = ({ onCapture, capturedImage, onClear }: CameraCaptureProps
     <div className="space-y-3">
       {streaming ? (
         <div className="relative">
-          <video ref={videoRef} autoPlay playsInline className="w-full rounded-lg border max-h-64 object-cover" />
+          <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-lg border object-cover" style={{ maxHeight: 256 }} />
           <div className="flex gap-2 mt-3">
             <Button onClick={takePhoto} className="flex-1 gap-2">
               <Camera className="h-4 w-4" /> Capture Photo
